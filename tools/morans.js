@@ -69,8 +69,6 @@ const moransICalc = (weight, count, inverse) => {
         observedI, expectedI
     };
 
-    console.log(observedI);
-
     return result;
 
 };

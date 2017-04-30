@@ -6,6 +6,8 @@ const cluster = require('cluster');
 const numCPUs = require('os').cpus().length;
 
 const {getData} = require('./tools/getData');
+const {returnData} = require('./tools/returnData');
+const {processGoTerms} = require('./tools/processGoTerms');
 
 
 if (cluster.isMaster) {
@@ -21,8 +23,6 @@ if (cluster.isMaster) {
     });
 
 } else {
-    const {moransICalc} = require('./tools/morans');
-
     let app = express();
 
     //Get background
@@ -39,45 +39,37 @@ if (cluster.isMaster) {
 
     //get Target
 
-    app.get('/morans/', (req, res) => {
+    app.get('/morans/all', (req, res) => {
+        let geoLevel = req.query.geohash;
+        let geohash = `geohash_${geoLevel}`;
+        let inverse = req.query.inverse !== 'false' ? true : false;
 
+        let baseUrl = 'http://vb-dev.bio.ic.ac.uk:7997/solr/genea_expression/select?indent=on&q=*:*&wt=json';
+
+        processGoTerms(baseUrl, geohash, geoLevel, backgroundMatrix, inverse, (csv) => {
+            console.log(csv);
+        })
+
+
+    });
+
+    app.get('/morans/', (req, res) => {
         let geoLevel = req.query.geohash;
         let geohash = `geohash_${geoLevel}`;
         let field = req.query.field;
         let value = req.query.value;
+        let inverse = req.query.inverse !== 'false' ? true : false;
+        let getAll = req.query.all !== 'false' ? true : false;
 
         let targetUrl = `http://vb-dev.bio.ic.ac.uk:7997/solr/genea_expression/smplGeoclust?q=${field}:${value}&stats.facet=${geohash}`;
+        console.log(targetUrl);
+        console.log(geohash);
 
-        getData(targetUrl, geohash, false, (result) => {
+        returnData(targetUrl, geohash, geoLevel, false, backgroundMatrix, inverse, (morans) => {
 
-            let backgroundCounts = backgroundMatrix[geoLevel-2][0];
-            let distanceMatrix = backgroundMatrix[geoLevel-2][1];
+            console.log(morans);
+        })
 
-            let normalizedCounts = [];
-
-            console.log(result);
-            console.log(backgroundCounts);
-
-            backgroundCounts.forEach((backgroundItem) => {
-                let pass = false;
-                result.forEach((targetItem) => {
-                    if (backgroundItem.hash === targetItem.hash) {
-                        // normalizedCounts.push(targetItem.count/backgroundItem.count);
-                        normalizedCounts.push(targetItem.count);
-                        pass = true;
-                    }
-                });
-
-                if (!pass) {
-                   normalizedCounts.push(0);
-                }
-            });
-
-            let moransI = moransICalc(distanceMatrix, normalizedCounts, true);
-
-            console.log(moransI);
-
-        });
     });
 
     app.listen(3000, () => {

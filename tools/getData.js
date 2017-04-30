@@ -5,7 +5,9 @@ const http = require('http');
 const math = require('mathjs');
 
 const getData = (targetUrl, geohash, background, callback) => {
+
     http.get(targetUrl, (res) => {
+
         const {statusCode} = res;
 
         let error;
