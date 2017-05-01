@@ -8,6 +8,7 @@ const numCPUs = require('os').cpus().length;
 const {getData} = require('./tools/getData');
 const {returnData} = require('./tools/returnData');
 const {processGoTerms} = require('./tools/processGoTerms');
+const {getGoTerms} = require('./tools/getGoTerms');
 
 
 if (cluster.isMaster) {
@@ -28,28 +29,73 @@ if (cluster.isMaster) {
     //Get background
 
     let backgroundMatrix = [];
-    for (let i = 2; i < 6; i++){
+    let goTermsMatrix = [];
+    let moransMatrix = {};
+    let baseUrl = 'http://vb-dev.bio.ic.ac.uk:7997/solr/genea_expression/select?indent=on&q=*:*&wt=json';
+    let promises = [];
+
+    for (let i = 2; i < 6; i++) {
         let targetUrl = `http://vb-dev.bio.ic.ac.uk:7997/solr/genea_expression/smplGeoclust?q=*:*&stats.facet=geohash_${i}`;
         let geohash = `geohash_${i}`;
 
-        getData(targetUrl, geohash, true, (result) => {
-            backgroundMatrix[i-2] = result;
+        let getDataPromise = new Promise((resolve, reject) => {
+            getData(targetUrl, geohash, true, (result) => {
+                backgroundMatrix[i - 2] = result;
+                resolve();
+            });
         });
+
+        promises.push(getDataPromise);
     }
+
+    let getGoTermsPromise = new Promise((resolve, reject) => {
+        getGoTerms(baseUrl, (result) => {
+            goTermsMatrix = result;
+            goTermsMatrix.forEach((term) => {
+                moransMatrix[term] = [];
+            });
+            resolve();
+        });
+    });
+
+    promises.push(getGoTermsPromise);
+
+    Promise.all(promises).then(() => {
+        console.log(`worker ${process.pid} is ready...`)
+    });
 
     //get Target
 
     app.get('/morans/all', (req, res) => {
-        let geoLevel = req.query.geohash;
-        let geohash = `geohash_${geoLevel}`;
+        let queryLevel = parseInt(req.query.geohash) + 1;
         let inverse = req.query.inverse !== 'false' ? true : false;
+        let promises = [];
+        let csv = '';
 
-        let baseUrl = 'http://vb-dev.bio.ic.ac.uk:7997/solr/genea_expression/select?indent=on&q=*:*&wt=json';
+        console.log('start GET /all request');
 
-        processGoTerms(baseUrl, geohash, geoLevel, backgroundMatrix, inverse, (csv) => {
-            console.log(csv);
-        })
+        for (let i = 2; i < queryLevel; i++) {
+            let geohash = `geohash_${i}`;
 
+            let promise = new Promise((resolve, reject) => {
+                processGoTerms(geohash, i, backgroundMatrix, inverse, goTermsMatrix, (result) => {
+                    // console.log(result);
+
+                    for (let item in result) {
+                        moransMatrix[item][i-2] = result[item];
+                    }
+
+                    resolve();
+
+                })
+            });
+
+            promises.push(promise);
+        }
+
+        Promise.all(promises).then(() => {
+            res.send(moransMatrix);
+        });
 
     });
 

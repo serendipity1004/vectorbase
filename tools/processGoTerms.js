@@ -5,18 +5,34 @@ const {getGoTerms} = require('./getGoTerms');
 const {returnData} = require('./returnData');
 const fs = require('fs');
 
-const processGoTerms = (baseUrl, geohash, geoLevel, backgroundMatrix, inverse, callback) => {
+const processGoTerms = (geohash, geoLevel, backgroundMatrix, inverse, goTerms, callback) => {
     let csv = '';
-    getGoTerms(baseUrl, (result) => {
-        result.forEach((term) => {
-            let targetUrl = `http://vb-dev.bio.ic.ac.uk:7997/solr/genea_expression/smplGeoclust?q=cvterms:"${term}"&stats.facet=${geohash}`;
+    let promises = [];
+    let moransMatrix = {};
+
+    goTerms.forEach((term) => {
+        moransMatrix[term] = '';
+    });
+
+    goTerms.forEach((term) => {
+        let targetUrl = `http://vb-dev.bio.ic.ac.uk:7997/solr/genea_expression/smplGeoclust?q=cvterms:"${term}"&stats.facet=${geohash}`;
+        let promise = new Promise((resolve, reject) => {
             returnData(targetUrl, geohash, geoLevel, false, backgroundMatrix, inverse, (morans) => {
-                csv += `${term}, ${morans.observedI}`;
-                console.log(`${term}, ${morans.observedI}`);
+                csv += `${term}, ${morans.observedI}\n`;
+
+                for (let matrixTerm in moransMatrix) {
+                    if (matrixTerm === term) {
+                        moransMatrix[matrixTerm] = morans.observedI;
+                    }
+                }
+                resolve();
             })
         });
-        callback(csv);
-    })
+        promises.push(promise);
+    });
+    Promise.all(promises).then(() => {
+        callback(moransMatrix)
+    });
 };
 
 module.exports = {
