@@ -20,7 +20,7 @@ const moransICalc = (weight, count, inverse) => {
     average = totalCount / count.length;
 
     count.forEach((item) => {
-        averagedCount.push(item - average)
+        averagedCount.push(Math.pow(item - average, 2))
     });
 
     if (inverse) {
@@ -34,18 +34,21 @@ const moransICalc = (weight, count, inverse) => {
             totalMatrix.push(arbTotal);
         });
 
-        weight.forEach((item, i) => {
+        // console.log(weight);
+
+        weight.forEach((item) => {
             let arbMatrix = [];
             item.forEach((value) => {
-                if (1 / value !== Infinity) {
-                    let inverse = 1 / value;
-                    arbMatrix.push(inverse/totalMatrix[i]);
+                if ((1 / value) !== Infinity) {
+                    let inverseVal = 1 / (1 + value);
+                    arbMatrix.push(inverseVal);
                 } else {
-                    arbMatrix.push(0);
+                    arbMatrix.push(1);
                 }
             });
             finalWeight.push(arbMatrix);
-        })
+        });
+        console.log(finalWeight);
     } else {
         finalWeight = weight;
     }

@@ -3,6 +3,7 @@
  */
 const http = require('http');
 const math = require('mathjs');
+const fs = require('fs');
 
 const getData = (targetUrl, geohash, background, callback) => {
 
@@ -38,7 +39,10 @@ const getData = (targetUrl, geohash, background, callback) => {
                 let yVals = [];
 
                 let xVal = parsedData.stats.stats_fields.geo_coords_ll_0_coordinate.facets[geohash];
+                // console.log(xVal);
+
                 let yVal = parsedData.stats.stats_fields.geo_coords_ll_1_coordinate.facets[geohash];
+                // console.log(yVal);
 
                 //Calculate distance and count if background === true
 
@@ -55,7 +59,9 @@ const getData = (targetUrl, geohash, background, callback) => {
                     for (let i = 0; i < xVals.length; i ++){
                         let arbMatrix = [];
                         for (let j = 0; j < yVals.length; j++){
-                            arbMatrix.push(math.sqrt(math.pow(xVals[i]-xVals[j], 2) + math.pow(yVals[i]-yVals[j], 2)))
+                            let distance = math.sqrt(math.pow(xVals[i]-xVals[j], 2) + math.pow(yVals[i]-yVals[j], 2));
+                            arbMatrix.push(distance);
+                            // console.log(`distance of `)
                         }
                         distanceMatrix.push(arbMatrix);
                     }

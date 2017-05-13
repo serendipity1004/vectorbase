@@ -2,7 +2,7 @@
  * Created by JC on 29/04/2017.
  */
 const {getGoTerms} = require('./getGoTerms');
-const {returnData} = require('./returnData');
+const {processData} = require('./processData');
 const fs = require('fs');
 
 const processGoTerms = (geohash, geoLevel, backgroundMatrix, inverse, goTerms, callback) => {
@@ -21,7 +21,7 @@ const processGoTerms = (geohash, geoLevel, backgroundMatrix, inverse, goTerms, c
             let targetUrl = `http://vb-dev.bio.ic.ac.uk:7997/solr/genea_expression/smplGeoclust?q=cvterms:"${term}"&stats.facet=${geohash}&rows=10320`;
 
             let promise = new Promise((resolve, reject) => {
-                returnData(targetUrl, geohash, geoLevel, false, backgroundMatrix, inverse, (morans) => {
+                processData(targetUrl, geohash, geoLevel, false, backgroundMatrix, inverse, (morans) => {
                     csv += `${term}, ${morans.observedI}\n`;
                     console.log(morans.observedI);
                     console.log(`morans count = ${count}`);

@@ -7,7 +7,7 @@ const numCPUs = require('os').cpus().length;
 const http = require('http');
 
 const {getData} = require('./tools/getData');
-const {returnData} = require('./tools/returnData');
+const {processData} = require('./tools/processData');
 const {processGoTerms} = require('./tools/processGoTerms');
 const {getGoTerms} = require('./tools/getGoTerms');
 
@@ -32,7 +32,7 @@ if (cluster.isMaster) {
     let backgroundMatrix = [];
     let goTermsMatrix = [];
     let moransMatrix = {};
-    let baseUrl = 'http://vb-dev.bio.ic.ac.uk:7997/solr/genea_expression/select?indent=on&q=*:*&wt=json&rows=1000';
+    let baseUrl = 'http://vb-dev.bio.ic.ac.uk:7997/solr/genea_expression/select?indent=on&q=*:*&wt=json&rows=10';
     let promises = [];
 
     for (let i = 2; i < 6; i++) {
@@ -161,7 +161,7 @@ if (cluster.isMaster) {
         console.log(targetUrl);
         console.log(geohash);
 
-        returnData(targetUrl, geohash, geoLevel, false, backgroundMatrix, inverse, (morans) => {
+        processData(targetUrl, geohash, geoLevel, false, backgroundMatrix, inverse, (morans) => {
             res.send(morans);
             console.log(morans);
         })

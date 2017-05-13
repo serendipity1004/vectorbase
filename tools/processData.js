@@ -4,7 +4,7 @@
 const {getData} = require('./getData');
 const {moransICalc} = require('./morans');
 
-const returnData = (targetUrl, geohash, geoLevel, background, backgroundMatrix, inverse, callback) => {
+const processData = (targetUrl, geohash, geoLevel, background, backgroundMatrix, inverse, callback) => {
 
     getData(targetUrl, geohash, background, (result) => {
 
@@ -32,11 +32,12 @@ const returnData = (targetUrl, geohash, geoLevel, background, backgroundMatrix, 
         });
 
         let moransI = moransICalc(distanceMatrix, normalizedCounts, inverse);
+        console.log(distanceMatrix);
         callback(moransI)
 
     });
 };
 
 module.exports = {
-    returnData
+    processData
 };
