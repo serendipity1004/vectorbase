@@ -4,6 +4,7 @@
 const express = require('express');
 const cluster = require('cluster');
 const numCPUs = require('os').cpus().length;
+const http = require('http');
 
 const {getData} = require('./tools/getData');
 const {returnData} = require('./tools/returnData');
@@ -31,11 +32,11 @@ if (cluster.isMaster) {
     let backgroundMatrix = [];
     let goTermsMatrix = [];
     let moransMatrix = {};
-    let baseUrl = 'http://vb-dev.bio.ic.ac.uk:7997/solr/genea_expression/select?indent=on&q=*:*&wt=json';
+    let baseUrl = 'http://vb-dev.bio.ic.ac.uk:7997/solr/genea_expression/select?indent=on&q=*:*&wt=json&rows=1000';
     let promises = [];
 
     for (let i = 2; i < 6; i++) {
-        let targetUrl = `http://vb-dev.bio.ic.ac.uk:7997/solr/genea_expression/smplGeoclust?q=*:*&stats.facet=geohash_${i}`;
+        let targetUrl = `http://vb-dev.bio.ic.ac.uk:7997/solr/genea_expression/smplGeoclust?q=*:*&stats.facet=geohash_${i}&rows=10320`;
         let geohash = `geohash_${i}`;
 
         let getDataPromise = new Promise((resolve, reject) => {
@@ -61,8 +62,48 @@ if (cluster.isMaster) {
     promises.push(getGoTermsPromise);
 
     Promise.all(promises).then(() => {
-        console.log(`worker ${process.pid} is ready...`)
+        console.log(`worker ${process.pid} is ready...`);
+        console.log(goTermsMatrix.length);
     });
+
+    app.get('/morans/test', (req, res) => {
+        console.log(`start test request`);
+        let targetUrl = `http://vb-dev.bio.ic.ac.uk:7997/solr/genea_expression/smplGeoclust?q=text:"GO:0003674"&stats.facet=geohash_3&rows=10320`;
+        let i = 0;
+        let promises = [];
+
+        console.log(`making request ${i}`);
+
+
+        for (let i = 0; i < 200; i++) {
+            setTimeout(
+                () => {
+                    let testReq = new Promise((resolve, reject) => {
+                        http.get(targetUrl, (result) => {
+                            result.on('data', (chunk) => {
+                                console.log(`working ${i}`);
+                            }).on('end', () => {
+                                console.log(`ending ${i}`);
+                                resolve();
+                            }).on('error', (err) => {
+                                console.log(`this is error message ${err}`);
+                            })
+                        })
+                    });
+
+                    promises.push(testReq);
+
+                    if (promises.length == 200) {
+                        Promise.all(promises).then(() => {
+                            console.log('done');
+                        })
+                    }
+                }, 50 * i
+            )
+        }
+    });
+
+
 
     //get Target
 
@@ -82,7 +123,7 @@ if (cluster.isMaster) {
                     // console.log(result);
 
                     for (let item in result) {
-                        moransMatrix[item][i-2] = result[item];
+                        moransMatrix[item][i - 2] = result[item];
                     }
 
                     resolve();
@@ -94,7 +135,16 @@ if (cluster.isMaster) {
         }
 
         Promise.all(promises).then(() => {
-            res.send(moransMatrix);
+            let result = '';
+
+            for (let item in moransMatrix) {
+                result += `${item}`;
+                moransMatrix[item].forEach((value) => {
+                    result += `, ${value}`
+                });
+                result += '\n';
+            }
+            res.send(result);
         });
 
     });
@@ -107,12 +157,12 @@ if (cluster.isMaster) {
         let inverse = req.query.inverse !== 'false' ? true : false;
         let getAll = req.query.all !== 'false' ? true : false;
 
-        let targetUrl = `http://vb-dev.bio.ic.ac.uk:7997/solr/genea_expression/smplGeoclust?q=${field}:${value}&stats.facet=${geohash}`;
+        let targetUrl = `http://vb-dev.bio.ic.ac.uk:7997/solr/genea_expression/smplGeoclust?q=${field}:${value}&stats.facet=${geohash}&rows=10320`;
         console.log(targetUrl);
         console.log(geohash);
 
         returnData(targetUrl, geohash, geoLevel, false, backgroundMatrix, inverse, (morans) => {
-
+            res.send(morans);
             console.log(morans);
         })
 
@@ -120,6 +170,12 @@ if (cluster.isMaster) {
 
     app.listen(3000, () => {
         console.log(`worker ${process.pid} started`)
+    }).on('error', (err) => {
+        console.log(`Caught error : ${err}`);
     });
+
+    process.on('uncaughtException', (err) => {
+        console.log(err)
+    })
 
 }

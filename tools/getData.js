@@ -80,6 +80,8 @@ const getData = (targetUrl, geohash, background, callback) => {
             } catch (e) {
                 console.error(e.message);
             }
+        }).on('error', (err) => {
+            console.log(err.message);
         })
     })
 };

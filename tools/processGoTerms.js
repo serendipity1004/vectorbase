@@ -9,30 +9,43 @@ const processGoTerms = (geohash, geoLevel, backgroundMatrix, inverse, goTerms, c
     let csv = '';
     let promises = [];
     let moransMatrix = {};
+    let count = 0;
 
     goTerms.forEach((term) => {
         moransMatrix[term] = '';
     });
 
-    goTerms.forEach((term) => {
-        let targetUrl = `http://vb-dev.bio.ic.ac.uk:7997/solr/genea_expression/smplGeoclust?q=cvterms:"${term}"&stats.facet=${geohash}`;
-        let promise = new Promise((resolve, reject) => {
-            returnData(targetUrl, geohash, geoLevel, false, backgroundMatrix, inverse, (morans) => {
-                csv += `${term}, ${morans.observedI}\n`;
+    goTerms.forEach((term, i) => {
 
-                for (let matrixTerm in moransMatrix) {
-                    if (matrixTerm === term) {
-                        moransMatrix[matrixTerm] = morans.observedI;
+        setTimeout(() => {
+            let targetUrl = `http://vb-dev.bio.ic.ac.uk:7997/solr/genea_expression/smplGeoclust?q=cvterms:"${term}"&stats.facet=${geohash}&rows=10320`;
+
+            let promise = new Promise((resolve, reject) => {
+                returnData(targetUrl, geohash, geoLevel, false, backgroundMatrix, inverse, (morans) => {
+                    csv += `${term}, ${morans.observedI}\n`;
+                    console.log(morans.observedI);
+                    console.log(`morans count = ${count}`);
+                    count++;
+
+                    for (let matrixTerm in moransMatrix) {
+                        if (matrixTerm === term) {
+                            moransMatrix[matrixTerm] = morans.observedI;
+                        }
                     }
-                }
-                resolve();
-            })
-        });
-        promises.push(promise);
+                    resolve();
+                })
+            });
+
+            promises.push(promise);
+
+            if (goTerms.length - 1 === i){
+                Promise.all(promises).then(() => {
+                    callback(moransMatrix)
+                });
+            }
+        }, 100 * i);
     });
-    Promise.all(promises).then(() => {
-        callback(moransMatrix)
-    });
+
 };
 
 module.exports = {

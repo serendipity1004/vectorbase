@@ -56,6 +56,8 @@ const getGoTerms = (targetUrl, callback) => {
             } catch (e) {
                 console.error(e.message);
             }
+        }).on('error', (err) => {
+            console.log(err.message);
         })
     })
 };
