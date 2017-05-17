@@ -5,6 +5,7 @@ const express = require('express');
 const cluster = require('cluster');
 const numCPUs = require('os').cpus().length;
 const http = require('http');
+const fs = require('fs');
 
 const {getData} = require('./tools/getData');
 const {processData} = require('./tools/processData');
@@ -29,7 +30,7 @@ if (cluster.isMaster) {
 
     //Get background
 
-    let backgroundMatrix = [];
+    let backgroundGrid = [];
     let goTermsMatrix = [];
     let moransMatrix = {};
     let baseUrl = 'http://vb-dev.bio.ic.ac.uk:7997/solr/genea_expression/select?indent=on&q=*:*&wt=json&rows=5';
@@ -41,7 +42,7 @@ if (cluster.isMaster) {
 
         let getDataPromise = new Promise((resolve, reject) => {
             getData(targetUrl, geohash, true, (result) => {
-                backgroundMatrix[i - 2] = result;
+                backgroundGrid[i - 2] = result;
                 resolve();
             });
         });
@@ -119,7 +120,7 @@ if (cluster.isMaster) {
             let geohash = `geohash_${i}`;
 
             let promise = new Promise((resolve, reject) => {
-                processGoTerms(geohash, i, backgroundMatrix, inverse, goTermsMatrix, (result) => {
+                processGoTerms(geohash, i, backgroundGrid, inverse, goTermsMatrix, (result) => {
                     // console.log(result);
 
                     for (let item in result) {
@@ -144,6 +145,7 @@ if (cluster.isMaster) {
                 });
                 result += '\n';
             }
+            fs.writeFile('results.txt', result);
             res.send(result);
         });
 
@@ -161,7 +163,7 @@ if (cluster.isMaster) {
         console.log(targetUrl);
         console.log(geohash);
 
-        processData(targetUrl, geohash, geoLevel, false, backgroundMatrix, inverse, (morans) => {
+        processData(targetUrl, geohash, geoLevel, false, backgroundGrid, inverse, (morans) => {
             res.send(morans);
             console.log(morans);
         })

@@ -43,7 +43,7 @@ const processGoTerms = (geohash, geoLevel, backgroundMatrix, inverse, goTerms, c
                     callback(moransMatrix)
                 });
             }
-        }, 100 * i);
+        }, 200 * i);
     });
 
 };

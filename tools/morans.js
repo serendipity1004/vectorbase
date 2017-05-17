@@ -1,7 +1,9 @@
 /**
  * Created by JC on 24/04/2017.
  */
-const moransICalc = (grid, inverse) => {
+const util = require('util');
+
+const moransICalc = (grid, distanceMatrix, inverse) => {
     let numerator = 0;
     let denominator = 0;
     let sumWeights = 0;
@@ -12,16 +14,51 @@ const moransICalc = (grid, inverse) => {
     let result = '';
     let average = 0;
     let finalWeight = [];
+    let countMatrix = [];
 
-    count.forEach((item) => {
+    grid.forEach((row) => {
+        row.forEach((col) => {
+            let key = Object.keys(col);
+            let norm = col[key][1] / col[key][0];
+
+            if (col[key][0] !== 0) {
+                countMatrix.push(norm)
+            } else {
+                countMatrix.push(0);
+            }
+
+        });
+    });
+
+    // countMatrix = [];
+
+    // for (let i = 0; i < 16; i ++){
+    //     for (let j = 0; j < 16; j ++){
+    //         if (i % 2 === 0){
+    //             if (j % 2 === 0){
+    //                 countMatrix.push(0)
+    //             }else {
+    //                 countMatrix.push(1)
+    //             }
+    //         }else {
+    //             if (j % 2 === 0){
+    //                 countMatrix.push(1)
+    //             }else {
+    //                 countMatrix.push(0)
+    //             }
+    //         }
+    //     }
+    // }
+
+    console.log(countMatrix);
+
+    countMatrix.forEach((item) => {
         totalCount += item;
     });
 
-    // console.log(count);
+    average = totalCount / countMatrix.length;
 
-    average = totalCount / count.length;
-
-    count.forEach((item) => {
+    countMatrix.forEach((item) => {
         averagedCount.push(item - average)
     });
 
@@ -36,8 +73,6 @@ const moransICalc = (grid, inverse) => {
             totalMatrix.push(arbTotal);
         });
 
-        // console.log(weight);
-
         weight.forEach((item) => {
             let arbMatrix = [];
             item.forEach((value) => {
@@ -50,34 +85,9 @@ const moransICalc = (grid, inverse) => {
             });
             finalWeight.push(arbMatrix);
         });
-        // console.log(finalWeight);
     } else {
-        finalWeight = weight;
+        finalWeight = distanceMatrix;
     }
-
-    let csvTest = '';
-
-    finalWeight.forEach((row) => {
-        row.forEach((col) => {
-            csvTest += col.toFixed(2) + '\t'
-        });
-        csvTest += '\n'
-    });
-    //
-    // console.log(csvTest);
-    // console.log(finalWeight);
-
-    // TEST
-
-    for (let i = 0; i < 13; i ++){
-        if ( i === 1 || i === 2 || i === 4 || i === 8 || i === 10 || i === 12){
-            averagedCount[i] = 1;
-        } else{
-            averagedCount[i] = 0;
-        }
-    }
-
-    console.log(averagedCount);
 
 
     for (let i = 0; i < finalWeight.length; i++) {
@@ -87,10 +97,6 @@ const moransICalc = (grid, inverse) => {
             sumWeights += finalWeight[i][j];
         }
     }
-
-    // console.log(averagedCount.length / sumWeights);
-    // console.log(numerator);
-    // console.log(denominator);
 
     observedI = (averagedCount.length / sumWeights) * (numerator / denominator);
     expectedI = 1 / (averagedCount.length - 1);

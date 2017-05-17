@@ -7,7 +7,7 @@ const fs = require('fs');
 const util = require('util');
 
 const {getDescendingIndices} = require('./getDescendingIndices');
-const {gridMaker} = require ('./gridMaker');
+const {gridMaker} = require('./gridMaker');
 
 const getData = (targetUrl, geohash, background, callback) => {
 
@@ -38,143 +38,85 @@ const getData = (targetUrl, geohash, background, callback) => {
             try {
                 let parsedData = JSON.parse(rawData);
                 let count = [];
-                let distanceMatrixEuc = [];
-                let distanceMatrixBin = [];
                 let xVals = [];
                 let yVals = [];
-                let neighboursDistanceMatrix = [];
                 let grid = [];
                 let geoLevel = geohash.split('_')[1];
+                let distanceMatrix = [];
+                let result = [];
 
                 let xVal = parsedData.stats.stats_fields.geo_coords_ll_0_coordinate.facets[geohash];
-                // console.log(xVal);
 
                 let yVal = parsedData.stats.stats_fields.geo_coords_ll_1_coordinate.facets[geohash];
-                // console.log(yVal);
 
                 //Calculate distance and count if background === true
 
-                if (background){
-                    grid = gridMaker(math.pow(2, geoLevel), geoLevel);
+                if (background) {
+                    let gridSize = math.pow(2, geoLevel);
+                    grid = gridMaker(gridSize, geoLevel, false);
+                    distanceMatrix = gridMaker(Math.pow(gridSize, 2), geoLevel, true);
 
                     for (let item in xVal) {
                         xVals.push(xVal[item].mean);
                         grid.forEach((row) => {
                             row.forEach((col) => {
-                                if (item == Object.keys(col)){
+                                if (item == Object.keys(col)) {
                                     col[item][0] = xVal[item].count;
                                 }
                             })
                         })
                     }
 
-                    for (let item in yVal) {
-                        // yVals.push(yVal[item].mean);
-                    }
+                    let count = 0;
 
+                    for (let i = 0; i < grid.length; i++) {
+                        for (let j = 0; j < grid.length; j++) {
+                            let key = Object.keys(grid[i][j])[0];
 
+                            let object = grid[i][j][key];
 
-                    // if (geoLevel == 2) {
-                    //     console.log(util.inspect(grid, false, null));
-                    // }
+                            if (object[0] !== 0) {
+                                for (let k = 0; k < grid.length; k++) {
+                                    for (let l = 0; l < grid.length; l++) {
+                                        let key2 = Object.keys(grid[k][l])[0];
+                                        let object = grid[k][l][key2];
 
+                                        if (((i + 1 === k && j === l) ||
+                                            (i - 1 === k && j === l) ||
+                                            (i === k && j + 1 === l) ||
+                                            (i === k && j - 1 === l)) &&
+                                            object[0] !== 0) {
 
+                                            distanceMatrix[i * grid.length + j][k * grid.length + l] = 1;
 
-                    for (let i = 0; i < xVals.length; i ++){
-                        let arbMatrixEuc = [];
-                        let arbMatrixBin = [];
-                        for (let j = 0; j < yVals.length; j++){
-                            let distance = math.sqrt(math.pow(xVals[i]-xVals[j], 2) + math.pow(yVals[i]-yVals[j], 2));
+                                        } else {
 
-                            // grid.forEach((row) => {
-                            //     row.forEach((col) => {
-                            //         if (object.keys(col) === )
-                            //     })
-                            // })
-                            arbMatrixEuc.push(distance);
+                                            distanceMatrix[i * grid.length + j][k * grid.length + l] = 0;
 
-                            if (distance > 50 || i === j){
-                                arbMatrixBin.push(0)
-                            } else {
-                                arbMatrixBin.push(1)
+                                        }
+                                    }
+                                }
                             }
-                            // console.log(`distance of `)
+
                         }
-                        distanceMatrixEuc.push(arbMatrixEuc);
-                        distanceMatrixBin.push(arbMatrixBin);
                     }
 
-                    //Only four neighbouring points have distance values but others 0
-                    distanceMatrixEuc.forEach((row) => {
-                        let indices = getDescendingIndices(row);
-                        // console.log(indices);
-                        let firstFour = [];
-                        let arbRow = [];
-                        let rowSum = 0;
+                    result.push(grid);
+                    result.push(distanceMatrix);
 
-                        for (let i = 1; i < 5; i++) {
-                            firstFour.push(indices[i]);
-                            // console.log('first four');
-                            // console.log(row[indices[i]]);
-                            rowSum += row[indices[i]];
-                            // console.log('row sum');
-                            // console.log(rowSum);
-                        }
-
-                        // console.log('first four');
-                        // console.log(firstFour);
-
-                        for (let i = 0; i < row.length; i++){
-                            arbRow.push(0);
-                        }
-
-                        for (let numb in firstFour){
-                            let indice = firstFour[numb];
-                            // arbRow[indice] = row[indice];
-                            // arbRow[indice] = 1;
-                            arbRow[indice] = 1/(row[indice]/rowSum);
-                        }
-
-                        // console.log('arb-row');
-                        // console.log(arbRow);
-                        neighboursDistanceMatrix.push(arbRow);
-
-                    });
-
-                    // Return CSV of neighboursDistanceMatrix
-
-                    // let arbCsv = '';
-                    //
-                    // neighboursDistanceMatrix.forEach((row) => {
-                    //     row.forEach((col) => {
-                    //         arbCsv += col + ','
-                    //     });
-                    //     arbCsv += '\n'
-                    // });
-                    //
-                    // console.log(arbCsv);
-
-                    // result.push(count);
-
-                    // Pass Euclidean Matrix
-                    // result.push(distanceMatrixEuc);
-                    // console.log('neighbour matrix');
-                    callback(grid);
+                    callback(result);
 
                 } else {
 
                     //Calculate only count if background === false
 
                     for (let item in xVal) {
-                        count.push({hash : item, count: xVal[item].count});
+                        count.push({hash: item, count: xVal[item].count});
                     }
 
                     callback(count);
                 }
 
-                // console.log(result);
-
-                // console.log(result)
             } catch (e) {
                 console.error(e.message);
             }
