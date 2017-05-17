@@ -1,7 +1,7 @@
 /**
  * Created by JC on 24/04/2017.
  */
-const moransICalc = (weight, count, inverse) => {
+const moransICalc = (grid, inverse) => {
     let numerator = 0;
     let denominator = 0;
     let sumWeights = 0;
@@ -17,10 +17,12 @@ const moransICalc = (weight, count, inverse) => {
         totalCount += item;
     });
 
+    // console.log(count);
+
     average = totalCount / count.length;
 
     count.forEach((item) => {
-        averagedCount.push(Math.pow(item - average, 2))
+        averagedCount.push(item - average)
     });
 
     if (inverse) {
@@ -48,10 +50,35 @@ const moransICalc = (weight, count, inverse) => {
             });
             finalWeight.push(arbMatrix);
         });
-        console.log(finalWeight);
+        // console.log(finalWeight);
     } else {
         finalWeight = weight;
     }
+
+    let csvTest = '';
+
+    finalWeight.forEach((row) => {
+        row.forEach((col) => {
+            csvTest += col.toFixed(2) + '\t'
+        });
+        csvTest += '\n'
+    });
+    //
+    // console.log(csvTest);
+    // console.log(finalWeight);
+
+    // TEST
+
+    for (let i = 0; i < 13; i ++){
+        if ( i === 1 || i === 2 || i === 4 || i === 8 || i === 10 || i === 12){
+            averagedCount[i] = 1;
+        } else{
+            averagedCount[i] = 0;
+        }
+    }
+
+    console.log(averagedCount);
+
 
     for (let i = 0; i < finalWeight.length; i++) {
         denominator += Math.pow(averagedCount[i], 2);

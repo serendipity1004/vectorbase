@@ -16,7 +16,7 @@ if (cluster.isMaster) {
 
     console.log(`Master ${process.pid} is running`);
 
-    for (let i = 0; i < numCPUs; i++) {
+    for (let i = 0; i < 1; i++) {
         cluster.fork();
     }
 
@@ -32,7 +32,7 @@ if (cluster.isMaster) {
     let backgroundMatrix = [];
     let goTermsMatrix = [];
     let moransMatrix = {};
-    let baseUrl = 'http://vb-dev.bio.ic.ac.uk:7997/solr/genea_expression/select?indent=on&q=*:*&wt=json&rows=10';
+    let baseUrl = 'http://vb-dev.bio.ic.ac.uk:7997/solr/genea_expression/select?indent=on&q=*:*&wt=json&rows=5';
     let promises = [];
 
     for (let i = 2; i < 6; i++) {
@@ -154,8 +154,8 @@ if (cluster.isMaster) {
         let geohash = `geohash_${geoLevel}`;
         let field = req.query.field;
         let value = req.query.value;
-        let inverse = req.query.inverse !== 'false' ? true : false;
-        let getAll = req.query.all !== 'false' ? true : false;
+        let inverse = req.query.inverse == 'true' ? true : false;
+        // console.log(inverse);
 
         let targetUrl = `http://vb-dev.bio.ic.ac.uk:7997/solr/genea_expression/smplGeoclust?q=${field}:${value}&stats.facet=${geohash}&rows=10320`;
         console.log(targetUrl);
@@ -165,7 +165,6 @@ if (cluster.isMaster) {
             res.send(morans);
             console.log(morans);
         })
-
     });
 
     app.listen(3000, () => {
