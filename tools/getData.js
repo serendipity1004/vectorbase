@@ -44,6 +44,7 @@ const getData = (targetUrl, geohash, background, callback) => {
                 let geoLevel = geohash.split('_')[1];
                 let distanceMatrix = [];
                 let result = [];
+                let removeIndices = [];
 
                 let xVal = parsedData.stats.stats_fields.geo_coords_ll_0_coordinate.facets[geohash];
 
@@ -67,7 +68,7 @@ const getData = (targetUrl, geohash, background, callback) => {
                         })
                     }
 
-                    let count = 0;
+                    // create a distance matrix
 
                     for (let i = 0; i < grid.length; i++) {
                         for (let j = 0; j < grid.length; j++) {
@@ -75,30 +76,54 @@ const getData = (targetUrl, geohash, background, callback) => {
 
                             let object = grid[i][j][key];
 
-                            if (object[0] !== 0) {
+                            if (object[0] === 0) {
+                                removeIndices.push(i * grid.length + j);
+                            } else {
                                 for (let k = 0; k < grid.length; k++) {
                                     for (let l = 0; l < grid.length; l++) {
                                         let key2 = Object.keys(grid[k][l])[0];
-                                        let object = grid[k][l][key2];
+                                        let objectInside = grid[k][l][key2];
 
                                         if (((i + 1 === k && j === l) ||
                                             (i - 1 === k && j === l) ||
                                             (i === k && j + 1 === l) ||
                                             (i === k && j - 1 === l)) &&
-                                            object[0] !== 0) {
+                                            objectInside[0] !== 0) {
 
                                             distanceMatrix[i * grid.length + j][k * grid.length + l] = 1;
-
                                         } else {
-
                                             distanceMatrix[i * grid.length + j][k * grid.length + l] = 0;
-
                                         }
                                     }
                                 }
                             }
 
                         }
+                    }
+
+                    // remove positions that do not have background counts.
+                    let removed = 0;
+
+                    for (let i = 0; i < removeIndices.length; i++) {
+                        distanceMatrix.splice(removeIndices[i] - removed, 1);
+                        if (geoLevel == 2){
+                            console.log(removeIndices[i] - removed);
+                            console.log(`removed : ${removed}`);
+                        }
+                        removed++;
+                    }
+
+                    for (let i = 0; i < distanceMatrix.length; i++) {
+                        let removed = 0;
+                        for (let j = 0; j < removeIndices.length; j++) {
+                            distanceMatrix[i].splice(removeIndices[j] - removed, 1);
+                            removed++;
+                        }
+                    }
+
+                    if (geoLevel == 2) {
+                        console.log(util.inspect(distanceMatrix, false, null));
+                        console.log(removeIndices);
                     }
 
                     result.push(grid);
