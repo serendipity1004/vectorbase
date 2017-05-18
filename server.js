@@ -33,7 +33,7 @@ if (cluster.isMaster) {
     let backgroundGrid = [];
     let goTermsMatrix = [];
     let moransMatrix = {};
-    let baseUrl = 'http://vb-dev.bio.ic.ac.uk:7997/solr/genea_expression/select?indent=on&q=*:*&wt=json&rows=5';
+    let baseUrl = 'http://vb-dev.bio.ic.ac.uk:7997/solr/genea_expression/select?indent=on&q=*:*&wt=json&rows=1';
     let promises = [];
 
     for (let i = 2; i < 6; i++) {
@@ -139,14 +139,15 @@ if (cluster.isMaster) {
             let result = '';
 
             for (let item in moransMatrix) {
+                let write = '';
                 result += `${item}`;
+                write += `${item}`;
                 moransMatrix[item].forEach((value) => {
-                    result += `, ${value}`
+                    result += `, ${value}`;
                 });
                 result += '\n';
             }
-            fs.writeFile('results.txt', result);
-            res.send(result);
+            fs.writeFile('./results/result.txt', result);
         });
 
     });

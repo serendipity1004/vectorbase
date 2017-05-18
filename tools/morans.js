@@ -21,8 +21,8 @@ const moransICalc = (grid, distanceMatrix, inverse) => {
             let key = Object.keys(col);
             let norm = col[key][1] / col[key][0];
 
-            console.log(col);
-            console.log(norm);
+            // console.log(col);
+            // console.log(norm);
 
             if (col[key][0] !== 0) {
                 countMatrix.push(norm)
@@ -30,9 +30,11 @@ const moransICalc = (grid, distanceMatrix, inverse) => {
         });
     });
 
-    console.log(countMatrix);
+    console.log(grid);
 
-    // countMatrix = [];
+    // console.log(countMatrix);
+
+    // countMatrix = [1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0];
 
     // for (let i = 0; i < 16; i ++){
     //     for (let j = 0; j < 16; j ++){

@@ -121,10 +121,10 @@ const getData = (targetUrl, geohash, background, callback) => {
                         }
                     }
 
-                    if (geoLevel == 2) {
-                        console.log(util.inspect(distanceMatrix, false, null));
-                        console.log(removeIndices);
-                    }
+                    // if (geoLevel == 2) {
+                    //     console.log(util.inspect(distanceMatrix, false, null));
+                    //     console.log(removeIndices);
+                    // }
 
                     result.push(grid);
                     result.push(distanceMatrix);
