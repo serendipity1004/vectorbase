@@ -52,6 +52,7 @@ const getData = (targetUrl, geohash, background, callback) => {
                 let yVal = parsedData.stats.stats_fields.geo_coords_ll_1_coordinate.facets[geohash];
 
                 let term = parsedData.responseHeader.params.q.split('"')[1];
+                let responseGeohash = parsedData.responseHeader.params["stats.facet"].split('_')[1];
                 // console.log(term);
 
                 //Calculate distance and count if background === true
@@ -88,11 +89,18 @@ const getData = (targetUrl, geohash, background, callback) => {
                                         let key2 = Object.keys(grid[k][l])[0];
                                         let objectInside = grid[k][l][key2];
 
-                                        if (((i + 1 === k && j === l) ||
-                                            (i - 1 === k && j === l) ||
-                                            (i === k && j + 1 === l) ||
-                                            (i === k && j - 1 === l)) &&
-                                            objectInside[0] !== 0) {
+                                        // Conditionals for orthogonals
+                                        // if (((i + 1 === k && j === l) ||
+                                        //     (i - 1 === k && j === l) ||
+                                        //     (i === k && j + 1 === l) ||
+                                        //     (i === k && j - 1 === l)) &&
+                                        //     objectInside[0] !== 0)
+
+                                        // COnditionals for orthogonals and diagonals
+
+                                        if ((i + 1 === k || i - 1 === k ||
+                                            j + 1 === l || j - 1 === l) &&
+                                            objectInside[0] !==0) {
 
                                             distanceMatrix[i * grid.length + j][k * grid.length + l] = 1;
                                         } else {
@@ -110,7 +118,7 @@ const getData = (targetUrl, geohash, background, callback) => {
 
                     for (let i = 0; i < removeIndices.length; i++) {
                         distanceMatrix.splice(removeIndices[i] - removed, 1);
-                        if (geoLevel == 2){
+                        if (geoLevel == 2) {
                             console.log(removeIndices[i] - removed);
                             console.log(`removed : ${removed}`);
                         }
@@ -145,6 +153,7 @@ const getData = (targetUrl, geohash, background, callback) => {
 
                     returnResult.push(count);
                     returnResult.push(term);
+                    returnResult.push(responseGeohash);
 
                     callback(returnResult);
                 }

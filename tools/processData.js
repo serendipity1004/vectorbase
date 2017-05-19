@@ -11,6 +11,7 @@ const processData = (targetUrl, geohash, geoLevel, background, backgroundMatrix,
 
         let counts = result[0];
         let goTerm = result[1];
+        let geoLevelResponse = result[2];
         let grid = backgroundMatrix[geoLevel-2][0];
         let distanceMatrix = backgroundMatrix[geoLevel -2][1];
         let normalizedCounts = [];
@@ -18,6 +19,7 @@ const processData = (targetUrl, geohash, geoLevel, background, backgroundMatrix,
 
         grid.forEach((row) => {
             row.forEach((col) => {
+                col[Object.keys(col)][1] = 0;
                 counts.forEach((targetItem) => {
                     if (targetItem.hash === Object.keys(col)[0]){
                         col[Object.keys(col)][1] = targetItem.count;
@@ -26,13 +28,11 @@ const processData = (targetUrl, geohash, geoLevel, background, backgroundMatrix,
             })
         });
 
-        let moransI = moransICalc(grid, distanceMatrix, inverse);
-
-        returnResult.push(moransI);
-        returnResult.push(goTerm);
-
-        callback(returnResult)
-
+        moransICalc(grid, distanceMatrix, inverse, goTerm, geoLevelResponse, (res) => {
+            returnResult.push(res);
+            returnResult.push(goTerm);
+            callback(returnResult);
+        });
     });
 };
 

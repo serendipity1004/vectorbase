@@ -4,15 +4,12 @@
 const util = require('util');
 const fs = require('fs');
 
-const moransICalc = (grid, distanceMatrix, inverse) => {
+const moransICalc = (grid, distanceMatrix, inverse, goTerm, geohash, callback) => {
     let numerator = 0;
     let denominator = 0;
     let sumWeights = 0;
     let totalCount = 0;
     let averagedCount = [];
-    let observedI = 0;
-    let expectedI = 0;
-    let result = '';
     let average = 0;
     let finalWeight = [];
     let countMatrix = [];
@@ -26,32 +23,25 @@ const moransICalc = (grid, distanceMatrix, inverse) => {
             let key = Object.keys(col);
             let norm = col[key][1] / col[key][0];
 
-            // backgroundCounts += key + ", " + col[key][0] + ", ";
-            // targetCounts += key + ", " + col[key][1] + ", ";
-            // normalizedCounts += key + ", " + norm + ", ";
+            backgroundCounts += key + ", " + col[key][0] + ", ";
+            targetCounts += key + ", " + col[key][1] + ", ";
+            normalizedCounts += key + ", " + norm + ", ";
 
             // console.log(col);
             // console.log(norm);
 
             if (col[key][0] !== 0) {
                 countMatrix.push(col[key][1]);
-                // countmatrixCsv += key + ", " + col[key][1] + ", ";
+                countmatrixCsv += key + ", " + col[key][1] + ", ";
             }
         });
-        // backgroundCounts += '\n';
-        // targetCounts += '\n';
-        // normalizedCounts += '\n';
-        // countmatrixCsv += '\n';
+        backgroundCounts += '\n';
+        targetCounts += '\n';
+        normalizedCounts += '\n';
+        countmatrixCsv += '\n';
     });
 
-    // fs.writeFile('./results/grid.txt', "Background Counts \n" + backgroundCounts);
-    // fs.appendFile('./results/grid.txt', "\n\nTarget Counts \n" + targetCounts);
-    // fs.appendFile('./results/grid.txt', "\n\nNormalized Counts \n" + normalizedCounts);
-    // fs.appendFile('./results/grid.txt', "\n\nCount Matrix \n" + countmatrixCsv);
-
-
-
-    console.log(grid);
+    console.log(util.inspect(grid, false, null));
 
     console.log(countMatrix);
 
@@ -123,14 +113,17 @@ const moransICalc = (grid, distanceMatrix, inverse) => {
         }
     }
 
-    observedI = (averagedCount.length / sumWeights) * (numerator / denominator);
-    expectedI = 1 / (averagedCount.length - 1);
+    let observedI = (averagedCount.length / sumWeights) * (numerator / denominator);
+    let expectedI = 1 / (averagedCount.length - 1);
 
-    result = {
+    let result = {
         observedI, expectedI
     };
 
-    return result;
+    fs.appendFile('./results/grid.txt', `\n${goTerm}, ${geohash}, ${result.observedI},`);
+
+
+    callback(result);
 
 };
 

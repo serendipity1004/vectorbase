@@ -110,7 +110,7 @@ if (cluster.isMaster) {
 
     app.get('/morans/all', (req, res) => {
         let queryLevel = parseInt(req.query.geohash) + 1;
-        let inverse = req.query.inverse !== 'false' ? true : false;
+        let inverse = req.query.inverse == 'true' ? true : false;
         let promises = [];
         let csv = '';
 
