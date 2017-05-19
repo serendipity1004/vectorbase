@@ -45,10 +45,14 @@ const getData = (targetUrl, geohash, background, callback) => {
                 let distanceMatrix = [];
                 let result = [];
                 let removeIndices = [];
+                let returnResult = [];
 
                 let xVal = parsedData.stats.stats_fields.geo_coords_ll_0_coordinate.facets[geohash];
 
                 let yVal = parsedData.stats.stats_fields.geo_coords_ll_1_coordinate.facets[geohash];
+
+                let term = parsedData.responseHeader.params.q.split('"')[1];
+                // console.log(term);
 
                 //Calculate distance and count if background === true
 
@@ -139,7 +143,10 @@ const getData = (targetUrl, geohash, background, callback) => {
                         count.push({hash: item, count: xVal[item].count});
                     }
 
-                    callback(count);
+                    returnResult.push(count);
+                    returnResult.push(term);
+
+                    callback(returnResult);
                 }
 
             } catch (e) {

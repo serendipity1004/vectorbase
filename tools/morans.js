@@ -2,6 +2,7 @@
  * Created by JC on 24/04/2017.
  */
 const util = require('util');
+const fs = require('fs');
 
 const moransICalc = (grid, distanceMatrix, inverse) => {
     let numerator = 0;
@@ -15,24 +16,44 @@ const moransICalc = (grid, distanceMatrix, inverse) => {
     let average = 0;
     let finalWeight = [];
     let countMatrix = [];
+    let backgroundCounts = '';
+    let targetCounts = '';
+    let normalizedCounts = '';
+    let countmatrixCsv = '';
 
     grid.forEach((row) => {
         row.forEach((col) => {
             let key = Object.keys(col);
             let norm = col[key][1] / col[key][0];
 
+            // backgroundCounts += key + ", " + col[key][0] + ", ";
+            // targetCounts += key + ", " + col[key][1] + ", ";
+            // normalizedCounts += key + ", " + norm + ", ";
+
             // console.log(col);
             // console.log(norm);
 
             if (col[key][0] !== 0) {
-                countMatrix.push(norm)
+                countMatrix.push(col[key][1]);
+                // countmatrixCsv += key + ", " + col[key][1] + ", ";
             }
         });
+        // backgroundCounts += '\n';
+        // targetCounts += '\n';
+        // normalizedCounts += '\n';
+        // countmatrixCsv += '\n';
     });
+
+    // fs.writeFile('./results/grid.txt', "Background Counts \n" + backgroundCounts);
+    // fs.appendFile('./results/grid.txt', "\n\nTarget Counts \n" + targetCounts);
+    // fs.appendFile('./results/grid.txt', "\n\nNormalized Counts \n" + normalizedCounts);
+    // fs.appendFile('./results/grid.txt', "\n\nCount Matrix \n" + countmatrixCsv);
+
+
 
     console.log(grid);
 
-    // console.log(countMatrix);
+    console.log(countMatrix);
 
     // countMatrix = [1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0];
 

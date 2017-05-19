@@ -33,7 +33,7 @@ if (cluster.isMaster) {
     let backgroundGrid = [];
     let goTermsMatrix = [];
     let moransMatrix = {};
-    let baseUrl = 'http://vb-dev.bio.ic.ac.uk:7997/solr/genea_expression/select?indent=on&q=*:*&wt=json&rows=1';
+    let baseUrl = 'http://vb-dev.bio.ic.ac.uk:7997/solr/genea_expression/select?indent=on&q=*:*&wt=json&rows=10320';
     let promises = [];
 
     for (let i = 2; i < 6; i++) {
@@ -69,7 +69,7 @@ if (cluster.isMaster) {
 
     app.get('/morans/test', (req, res) => {
         console.log(`start test request`);
-        let targetUrl = `http://vb-dev.bio.ic.ac.uk:7997/solr/genea_expression/smplGeoclust?q=text:"GO:0003674"&stats.facet=geohash_3&rows=10320`;
+        let targetUrl = `http://vb-dev.bio.ic.ac.uk:7997/solr/genea_expression/smplGeoclust?q=cvterms:"GO:0003674"&stats.facet=geohash_3&rows=10320`;
         let i = 0;
         let promises = [];
 
@@ -165,8 +165,8 @@ if (cluster.isMaster) {
         console.log(geohash);
 
         processData(targetUrl, geohash, geoLevel, false, backgroundGrid, inverse, (morans) => {
-            res.send(morans);
-            console.log(morans);
+            res.send(morans[0]);
+            console.log(morans[0]);
         })
     });
 

@@ -21,15 +21,17 @@ const processGoTerms = (geohash, geoLevel, backgroundMatrix, inverse, goTerms, c
             let targetUrl = `http://vb-dev.bio.ic.ac.uk:7997/solr/genea_expression/smplGeoclust?q=cvterms:"${term}"&stats.facet=${geohash}&rows=10320`;
 
             let promise = new Promise((resolve, reject) => {
-                processData(targetUrl, geohash, geoLevel, false, backgroundMatrix, inverse, (morans) => {
-                    csv += `${term}, ${morans.observedI}\n`;
+                processData(targetUrl, geohash, geoLevel, false, backgroundMatrix, inverse, (result) => {
+                    let morans = result[0];
+                    let goTerm = result[1];
+                    csv += `${goTerm}, ${morans.observedI}\n`;
                     console.log(morans.observedI);
                     console.log(`morans count = ${count}`);
                     count++;
 
                     for (let matrixTerm in moransMatrix) {
-                        if (matrixTerm === term) {
-                            moransMatrix[matrixTerm] = morans.observedI;
+                        if (matrixTerm === goTerm) {
+                            moransMatrix[goTerm] = morans.observedI;
                         }
                     }
                     resolve();

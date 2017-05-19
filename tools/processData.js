@@ -9,13 +9,16 @@ const processData = (targetUrl, geohash, geoLevel, background, backgroundMatrix,
 
     getData(targetUrl, geohash, background, (result) => {
 
+        let counts = result[0];
+        let goTerm = result[1];
         let grid = backgroundMatrix[geoLevel-2][0];
         let distanceMatrix = backgroundMatrix[geoLevel -2][1];
         let normalizedCounts = [];
+        let returnResult = [];
 
         grid.forEach((row) => {
             row.forEach((col) => {
-                result.forEach((targetItem) => {
+                counts.forEach((targetItem) => {
                     if (targetItem.hash === Object.keys(col)[0]){
                         col[Object.keys(col)][1] = targetItem.count;
                     }
@@ -25,7 +28,10 @@ const processData = (targetUrl, geohash, geoLevel, background, backgroundMatrix,
 
         let moransI = moransICalc(grid, distanceMatrix, inverse);
 
-        callback(moransI)
+        returnResult.push(moransI);
+        returnResult.push(goTerm);
+
+        callback(returnResult)
 
     });
 };
