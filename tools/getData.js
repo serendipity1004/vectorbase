@@ -94,14 +94,19 @@ const getData = (targetUrl, geohash, background, callback) => {
                                         //     (i - 1 === k && j === l) ||
                                         //     (i === k && j + 1 === l) ||
                                         //     (i === k && j - 1 === l)) &&
-                                        //     objectInside[0] !== 0)
+                                        //     objectInside[0] !== 0){
 
                                         // COnditionals for orthogonals and diagonals
 
-                                        if ((i + 1 === k || i - 1 === k ||
-                                            j + 1 === l || j - 1 === l) &&
-                                            objectInside[0] !==0) {
-
+                                        if (((i + 1 === k && j === l) ||
+                                            (i - 1 === k && j === l) ||
+                                            (i === k && j + 1 === l) ||
+                                            (i === k && j - 1 === l) ||
+                                            (i + 1 == k && j + 1 == l) ||
+                                            (i -1 == k && j + 1 == l) ||
+                                            (i + 1 == k && j -1 == l) ||
+                                            (i -1 == k && j -1 == l)) &&
+                                            objectInside[0] !== 0){
                                             distanceMatrix[i * grid.length + j][k * grid.length + l] = 1;
                                         } else {
                                             distanceMatrix[i * grid.length + j][k * grid.length + l] = 0;
@@ -112,6 +117,7 @@ const getData = (targetUrl, geohash, background, callback) => {
 
                         }
                     }
+
 
                     // remove positions that do not have background counts.
                     let removed = 0;
@@ -132,7 +138,6 @@ const getData = (targetUrl, geohash, background, callback) => {
                             removed++;
                         }
                     }
-
                     // if (geoLevel == 2) {
                     //     console.log(util.inspect(distanceMatrix, false, null));
                     //     console.log(removeIndices);

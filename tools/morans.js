@@ -31,7 +31,7 @@ const moransICalc = (grid, distanceMatrix, inverse, goTerm, geohash, callback) =
             // console.log(norm);
 
             if (col[key][0] !== 0) {
-                countMatrix.push(col[key][1]);
+                countMatrix.push(norm);
                 countmatrixCsv += key + ", " + col[key][1] + ", ";
             }
         });
@@ -41,9 +41,9 @@ const moransICalc = (grid, distanceMatrix, inverse, goTerm, geohash, callback) =
         countmatrixCsv += '\n';
     });
 
-    console.log(util.inspect(grid, false, null));
+    // console.log(util.inspect(grid, false, null));
 
-    console.log(countMatrix);
+    // console.log(countMatrix);
 
     // countMatrix = [1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0];
 
@@ -120,7 +120,15 @@ const moransICalc = (grid, distanceMatrix, inverse, goTerm, geohash, callback) =
         observedI, expectedI
     };
 
-    fs.appendFile('./results/grid.txt', `\n${goTerm}, ${geohash}, ${result.observedI},`);
+    let distanceMatrixCsv = '';
+    distanceMatrix.forEach((row) => {
+        row.forEach((col) => {
+            distanceMatrixCsv += col + ', '
+        });
+        distanceMatrixCsv +=  '\n'
+    });
+
+    fs.appendFile('./results/grid.txt', `\n${goTerm}, ${geohash}, ${result.observedI}, \n ${backgroundCounts}, \n ${targetCounts}, \n ${countmatrixCsv}, \n ${distanceMatrixCsv}`);
 
 
     callback(result);
