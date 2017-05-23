@@ -6,11 +6,15 @@ const cluster = require('cluster');
 const numCPUs = require('os').cpus().length;
 const http = require('http');
 const fs = require('fs');
+const async = require('async');
+const util = require('util');
+// const {eachLimit} = require('async/eachLimit');
 
 const {getData} = require('./tools/getData');
 const {processData} = require('./tools/processData');
 const {processGoTerms} = require('./tools/processGoTerms');
 const {getGoTerms} = require('./tools/getGoTerms');
+const {getGoTermDetails} = require('./tools/getGoTermDetails');
 
 
 if (cluster.isMaster) {
@@ -54,6 +58,9 @@ if (cluster.isMaster) {
         getGoTerms(baseUrl, (result) => {
             goTermsMatrix = result;
             goTermsMatrix.forEach((term) => {
+                if (term.length == 0) {
+                    reject();
+                }
                 moransMatrix[term] = [];
             });
             resolve();
@@ -62,7 +69,29 @@ if (cluster.isMaster) {
 
     promises.push(getGoTermsPromise);
 
+    let count = 0;
+
+    let detailsAsync = (term, callback) => {
+
+        getGoTermDetails(term, (result) => {
+            moransMatrix[term][0] = result[0];
+            moransMatrix[term][1] = result[1];
+            console.log(`${term} ready`)
+            console.log(count++)
+            callback(null, '');
+        })
+    }
+
     Promise.all(promises).then(() => {
+        console.log('go term matrix ready')
+        async.eachLimit(goTermsMatrix, 100, detailsAsync, (err) => {
+            if (err) {
+                console.log(err)
+            }
+
+            console.log('details ready...');
+        })
+
         console.log(`worker ${process.pid} is ready...`);
         console.log(goTermsMatrix.length);
     });
@@ -105,52 +134,76 @@ if (cluster.isMaster) {
     });
 
 
-
     //get Target
 
     app.get('/morans/all', (req, res) => {
-        let queryLevel = parseInt(req.query.geohash) + 1;
-        let inverse = req.query.inverse == 'true' ? true : false;
-        let promises = [];
-        let csv = '';
+            let queryLevel = parseInt(req.query.geohash) + 1;
+            let inverse = req.query.inverse == 'true' ? true : false;
+            let promises = [];
+            let csv = '';
+            let asyncParameters = [];
+            let count = 0;
 
-        console.log('start GET /all request');
 
-        for (let i = 2; i < queryLevel; i++) {
-            let geohash = `geohash_${i}`;
+            console.log('start GET /all request');
 
-            let promise = new Promise((resolve, reject) => {
-                processGoTerms(geohash, i, backgroundGrid, inverse, goTermsMatrix, (result) => {
-                    // console.log(result);
+            for (let i = 2; i < queryLevel; i++) {
+                let geohash = `geohash_${i}`;
+                for (let j = 0; j < goTermsMatrix.length; j++) {
+                    let targetUrl = `http://localhost:7997/solr/genea_expression/smplGeoclust?q=cvterms:"${goTermsMatrix[j]}"&stats.facet=${geohash}&rows=10320`
+                    asyncParameters.push([targetUrl, geohash, i, goTermsMatrix[j]])
+                }
+            }
 
-                    for (let item in result) {
-                        moransMatrix[item][i - 2] = result[item];
+            let eachAsync = (inputParameters, callback) => {
+
+                console.log('starting eachasync')
+
+                let geohash = inputParameters[1];
+                let i = inputParameters[2];
+                let goTerm = inputParameters[3];
+
+                processGoTerms(geohash, i, backgroundGrid, inverse, goTerm, (result) => {
+
+                    for (let item in moransMatrix) {
+                        if (item === result[1]) {
+                            moransMatrix[item][result[2]] = result[0].observedI;
+                        }
                     }
-
-                    resolve();
-
+                    console.log(`Count : ${count++}, Term : ${result[1]}, I : ${result[0].observedI}, level : ${result[2]}`)
+                    callback(null, '');
                 })
+            }
+
+
+            async.eachLimit(asyncParameters, 50, eachAsync, (err) => {
+                if (err) {
+                    console.log(err)
+                }
+
+                console.log('requests finished')
+
+                let result = '';
+
+                for (let item in moransMatrix) {
+                    let write = '';
+                    result += `${item}`;
+                    write += `${item}`;
+                    moransMatrix[item].forEach((value) => {
+                        result += `, ${value}`;
+                    });
+                    result += '\n';
+                }
+
+                console.log('result is')
+                console.log(result)
+                fs.writeFile('./results/result.txt', result);
             });
 
-            promises.push(promise);
+
         }
-
-        Promise.all(promises).then(() => {
-            let result = '';
-
-            for (let item in moransMatrix) {
-                let write = '';
-                result += `${item}`;
-                write += `${item}`;
-                moransMatrix[item].forEach((value) => {
-                    result += `, ${value}`;
-                });
-                result += '\n';
-            }
-            fs.writeFile('./results/result.txt', result);
-        });
-
-    });
+    )
+    ;
 
     app.get('/morans/', (req, res) => {
         let geoLevel = req.query.geohash;

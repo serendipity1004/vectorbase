@@ -128,7 +128,7 @@ const moransICalc = (grid, distanceMatrix, inverse, goTerm, geohash, callback) =
         distanceMatrixCsv +=  '\n'
     });
 
-    fs.appendFile('./results/grid.txt', `\n${goTerm}, ${geohash}, ${result.observedI}, \n ${backgroundCounts}, \n ${targetCounts}, \n ${countmatrixCsv}, \n ${distanceMatrixCsv}`);
+    // fs.appendFile('./results/grid.txt', `\n${goTerm}, ${geohash}, ${result.observedI}, \n ${backgroundCounts}, \n ${targetCounts}, \n ${countmatrixCsv}, \n ${distanceMatrixCsv}`);
 
 
     callback(result);

@@ -8,6 +8,9 @@ const util = require('util');
 const processData = (targetUrl, geohash, geoLevel, background, backgroundMatrix, inverse, callback) => {
 
     getData(targetUrl, geohash, background, (result) => {
+        if (result.length === 0){
+            callback(result)
+        }
 
         let counts = result[0];
         let goTerm = result[1];
@@ -31,6 +34,7 @@ const processData = (targetUrl, geohash, geoLevel, background, backgroundMatrix,
         moransICalc(grid, distanceMatrix, inverse, goTerm, geoLevelResponse, (res) => {
             returnResult.push(res);
             returnResult.push(goTerm);
+            returnResult.push(geoLevelResponse)
             callback(returnResult);
         });
     });
