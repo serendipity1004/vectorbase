@@ -117,7 +117,7 @@ const moransICalc = (grid, distanceMatrix, inverse, goTerm, geohash, callback) =
     let expectedI = 1 / (averagedCount.length - 1);
 
     let result = {
-        observedI, expectedI
+        observedI, expectedI, totalCount
     };
 
     let distanceMatrixCsv = '';

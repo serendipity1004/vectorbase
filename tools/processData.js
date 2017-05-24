@@ -34,7 +34,7 @@ const processData = (targetUrl, geohash, geoLevel, background, backgroundMatrix,
         moransICalc(grid, distanceMatrix, inverse, goTerm, geoLevelResponse, (res) => {
             returnResult.push(res);
             returnResult.push(goTerm);
-            returnResult.push(geoLevelResponse)
+            returnResult.push(geoLevelResponse);
             callback(returnResult);
         });
     });

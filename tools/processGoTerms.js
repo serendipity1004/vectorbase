@@ -5,13 +5,13 @@ const {getGoTerms} = require('./getGoTerms');
 const {processData} = require('./processData');
 const fs = require('fs');
 
-const processGoTerms = (geohash, geoLevel, backgroundMatrix, inverse, goTerm, callback) => {
+const processGoTerms = (geohash, geoLevel, backgroundMatrix, inverse, goTerm, host, callback) => {
     let csv = '';
     let promises = [];
     let moransMatrix = {};
     let count = 0;
 
-            let targetUrl = `http://localhost:7997/solr/genea_expression/smplGeoclust?q=cvterms:"${goTerm}"&stats.facet=${geohash}&rows=10320`;
+            let targetUrl = `http://${host}:7997/solr/genea_expression/smplGeoclust?q=cvterms:"${goTerm}"&stats.facet=${geohash}&rows=10320`;
             console.log(targetUrl);
 
             let promise = new Promise((resolve, reject) => {

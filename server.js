@@ -15,7 +15,10 @@ const {processData} = require('./tools/processData');
 const {processGoTerms} = require('./tools/processGoTerms');
 const {getGoTerms} = require('./tools/getGoTerms');
 const {getGoTermDetails} = require('./tools/getGoTermDetails');
+const {getRandomCounts} = require('./tools/getRandomCounts');
+const {moransICalc} = require('./tools/morans');
 
+const host = 'vb-dev.bio.ic.ac.uk';
 
 if (cluster.isMaster) {
 
@@ -37,11 +40,12 @@ if (cluster.isMaster) {
     let backgroundGrid = [];
     let goTermsMatrix = [];
     let moransMatrix = {};
-    let baseUrl = 'http://localhost:7997/solr/genea_expression/select?indent=on&q=*:*&wt=json&rows=10320';
+    let baseUrl = `http://${host}:7997/solr/genea_expression/select?facet.field=cvterms&facet.limit=10&facet=on&indent=on&q=*:*&rows=0&wt=json`;
     let promises = [];
+    let goTermCounts = [];
 
     for (let i = 2; i < 6; i++) {
-        let targetUrl = `http://localhost:7997/solr/genea_expression/smplGeoclust?q=*:*&stats.facet=geohash_${i}&rows=10320`;
+        let targetUrl = `http://${host}:7997/solr/genea_expression/smplGeoclust?q=*:*&stats.facet=geohash_${i}&rows=10320`;
         let geohash = `geohash_${i}`;
 
         let getDataPromise = new Promise((resolve, reject) => {
@@ -56,12 +60,14 @@ if (cluster.isMaster) {
 
     let getGoTermsPromise = new Promise((resolve, reject) => {
         getGoTerms(baseUrl, (result) => {
-            goTermsMatrix = result;
-            goTermsMatrix.forEach((term) => {
+            console.log(result);
+            goTermsMatrix = result[0];
+            goTermsMatrix.forEach((term, i) => {
                 if (term.length == 0) {
                     reject();
                 }
-                moransMatrix[term] = [];
+                moransMatrix[term] = [result[1][i]];
+                goTermCounts.push(result[1][i])
             });
             resolve();
         });
@@ -74,23 +80,24 @@ if (cluster.isMaster) {
     let detailsAsync = (term, callback) => {
 
         getGoTermDetails(term, (result) => {
-            moransMatrix[term][0] = result[0];
-            moransMatrix[term][1] = result[1];
-            console.log(`${term} ready`)
-            console.log(count++)
+            moransMatrix[term][1] = result[0];
+            moransMatrix[term][2] = result[1];
+            console.log(`${term} ready`);
+            console.log(count++);
             callback(null, '');
         })
-    }
+    };
 
     Promise.all(promises).then(() => {
-        console.log('go term matrix ready')
+        console.log('go term matrix ready');
         async.eachLimit(goTermsMatrix, 100, detailsAsync, (err) => {
             if (err) {
                 console.log(err)
             }
+            console.log(moransMatrix);
 
             console.log('details ready...');
-        })
+        });
 
         console.log(`worker ${process.pid} is ready...`);
         console.log(goTermsMatrix.length);
@@ -98,7 +105,7 @@ if (cluster.isMaster) {
 
     app.get('/morans/test', (req, res) => {
         console.log(`start test request`);
-        let targetUrl = `http://localhost:7997/solr/genea_expression/smplGeoclust?q=cvterms:"GO:0003674"&stats.facet=geohash_3&rows=10320`;
+        let targetUrl = `http://${host}:7997/solr/genea_expression/smplGeoclust?q=cvterms:"GO:0003674"&stats.facet=geohash_3&rows=10320`;
         let i = 0;
         let promises = [];
 
@@ -143,6 +150,7 @@ if (cluster.isMaster) {
             let csv = '';
             let asyncParameters = [];
             let count = 0;
+            goTermCounts = [];
 
 
             console.log('start GET /all request');
@@ -150,30 +158,38 @@ if (cluster.isMaster) {
             for (let i = 2; i < queryLevel; i++) {
                 let geohash = `geohash_${i}`;
                 for (let j = 0; j < goTermsMatrix.length; j++) {
-                    let targetUrl = `http://localhost:7997/solr/genea_expression/smplGeoclust?q=cvterms:"${goTermsMatrix[j]}"&stats.facet=${geohash}&rows=10320`
+                    let targetUrl = `http://${host}:7997/solr/genea_expression/smplGeoclust?q=cvterms:"${goTermsMatrix[j]}"&stats.facet=${geohash}&rows=10320`
                     asyncParameters.push([targetUrl, geohash, i, goTermsMatrix[j]])
                 }
             }
 
             let eachAsync = (inputParameters, callback) => {
 
-                console.log('starting eachasync')
+                console.log('starting eachasync');
 
                 let geohash = inputParameters[1];
                 let i = inputParameters[2];
                 let goTerm = inputParameters[3];
 
-                processGoTerms(geohash, i, backgroundGrid, inverse, goTerm, (result) => {
+                processGoTerms(geohash, i, backgroundGrid, inverse, goTerm, host, (result) => {
+
+                    let morans = result[0];
+                    let goTerm = result[1];
+                    let geoLevel = result[2];
+
 
                     for (let item in moransMatrix) {
                         if (item === result[1]) {
-                            moransMatrix[item][result[2]] = result[0].observedI;
+                            moransMatrix[item][result[2] + 2] = result[0].observedI;
+                            if (moransMatrix[item][result[2] + 1] === null){
+                                moransMatrix[item][result[2] + 1] = result[0].totalCount;
+                            }
                         }
                     }
-                    console.log(`Count : ${count++}, Term : ${result[1]}, I : ${result[0].observedI}, level : ${result[2]}`)
+                    console.log(`Count : ${count++}, Term : ${result[1]}, I : ${result[0].observedI}, level : ${result[2]}`);
                     callback(null, '');
                 })
-            }
+            };
 
 
             async.eachLimit(asyncParameters, 50, eachAsync, (err) => {
@@ -181,6 +197,7 @@ if (cluster.isMaster) {
                     console.log(err)
                 }
 
+                console.log(goTermCounts);
                 console.log('requests finished')
 
                 let result = '';
@@ -194,16 +211,82 @@ if (cluster.isMaster) {
                     });
                     result += '\n';
                 }
-
-                console.log('result is')
-                console.log(result)
                 fs.writeFile('./results/result.txt', result);
             });
 
 
         }
-    )
-    ;
+    );
+
+    app.get('/morans/randomize', (req, res) => {
+        let geohash = req.query.geohash;
+        let repeats = req.query.repeats;
+        let result = [];
+        let repeatedCounts = [];
+
+        for (let i = 0; i < goTermCounts.length; i++){
+            for(let j = 0; j <repeats; j++){
+                repeatedCounts.push(goTermCounts[i]);
+            }
+        }
+
+
+        let eachAsync = (parameter, callback) => {
+            console.log('starting async');
+            getRandomCounts(parameter, `geohash_${geohash}`, (counts) => {
+
+                let grid = backgroundGrid[geohash-2][0];
+                let distanceMatrix = backgroundGrid[geohash-2][1];
+
+                grid.forEach((row) => {
+                    row.forEach((col) => {
+                        col[Object.keys(col)][1] = 0;
+                        counts.forEach((targetItem) => {
+                            if (targetItem.hash === Object.keys(col)[0]){
+                                col[Object.keys(col)][1] = targetItem.count;
+                            }
+                        })
+                    })
+                });
+
+                moransICalc(grid, distanceMatrix, false, parameter, geohash, (res) => {
+                    let pass = false;
+
+                    for (let i =0; i < result.length; i ++){
+                        if (result[i][0] === parameter){
+                            result[i].push(res.observedI);
+                            pass = true;
+                            break;
+                        }
+                    }
+                    if (!pass){
+                        result.push([parameter, res.observedI])
+                    }
+                    callback(null, '');
+                });
+            })
+        };
+
+        async.eachLimit(repeatedCounts, 50, eachAsync, (err) => {
+            if (err) {
+                console.log(err)
+            }
+
+            console.log('results are');
+            console.log(result);
+
+            let resultCsv = '';
+
+            for (let i = 0; i < result.length; i ++){
+                for (let j = 0; j < result[i].length;  j++){
+                    resultCsv += result[i][j] + ', '
+                }
+                resultCsv += '\n'
+            }
+
+            fs.writeFile('./results/randomizeResult.txt', resultCsv)
+        })
+    });
 
     app.get('/morans/', (req, res) => {
         let geoLevel = req.query.geohash;
@@ -213,7 +296,7 @@ if (cluster.isMaster) {
         let inverse = req.query.inverse == 'true' ? true : false;
         // console.log(inverse);
 
-        let targetUrl = `http://localhost:7997/solr/genea_expression/smplGeoclust?q=${field}:${value}&stats.facet=${geohash}&rows=10320`;
+        let targetUrl = `http://${host}:7997/solr/genea_expression/smplGeoclust?q=${field}:${value}&stats.facet=${geohash}&rows=10320`;
         console.log(targetUrl);
         console.log(geohash);
 

@@ -32,26 +32,20 @@ const getGoTerms = (targetUrl, callback) => {
             try {
                 let parsedData = JSON.parse(rawData);
                 let termsMatrix = [];
+                let countMatrix = [];
 
-                let targets = parsedData.response.docs;
+                let terms = parsedData.facet_counts.facet_fields.cvterms;
+                console.log(terms)
 
-                targets.forEach((gene) => {
-                    let terms = gene.cvterms;
-                    if (terms !== undefined && terms.length !== 0) {
-                        terms.forEach((term) => {
-                            termsMatrix.push(term);
-                        })
+                for (let i = 0; i < terms.length; i ++){
+                    if (i % 2 === 0){
+                        termsMatrix.push(terms[i].toUpperCase())
+                    }else {
+                        countMatrix.push(terms[i])
                     }
-                });
+                }
 
-                let reducedMatrix = termsMatrix.reduce((acc, val) => {
-                    if (acc.indexOf(val) < 0 ) {
-                        acc.push(val);
-                    }
-                    return acc;
-                }, []);
-
-                callback(reducedMatrix);
+                callback([termsMatrix, countMatrix]);
 
             } catch (e) {
                 console.error(e.message);
