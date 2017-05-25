@@ -41,32 +41,6 @@ const moransICalc = (grid, distanceMatrix, inverse, goTerm, geohash, callback) =
         countmatrixCsv += '\n';
     });
 
-    // console.log(util.inspect(grid, false, null));
-
-    // console.log(countMatrix);
-
-    // countMatrix = [1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0];
-
-    // for (let i = 0; i < 16; i ++){
-    //     for (let j = 0; j < 16; j ++){
-    //         if (i % 2 === 0){
-    //             if (j % 2 === 0){
-    //                 countMatrix.push(0)
-    //             }else {
-    //                 countMatrix.push(1)
-    //             }
-    //         }else {
-    //             if (j % 2 === 0){
-    //                 countMatrix.push(1)
-    //             }else {
-    //                 countMatrix.push(0)
-    //             }
-    //         }
-    //     }
-    // }
-
-    // console.log(countMatrix);
-
     countMatrix.forEach((item) => {
         totalCount += item;
     });

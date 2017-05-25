@@ -40,7 +40,7 @@ if (cluster.isMaster) {
     let backgroundGrid = [];
     let goTermsMatrix = [];
     let moransMatrix = {};
-    let baseUrl = `http://${host}:7997/solr/genea_expression/select?facet.field=cvterms&facet.limit=10&facet=on&indent=on&q=*:*&rows=0&wt=json`;
+    let baseUrl = `http://${host}:7997/solr/genea_expression/select?facet.field=cvterms&facet.limit=10320&facet=on&indent=on&q=*:*&rows=0&wt=json`;
     let promises = [];
     let goTermCounts = [];
 
@@ -221,71 +221,97 @@ if (cluster.isMaster) {
     app.get('/morans/randomize', (req, res) => {
         let geohash = req.query.geohash;
         let repeats = req.query.repeats;
+        let tempCounts = goTermCounts;
+        let sortedCounts = [];
         let result = [];
         let repeatedCounts = [];
+        let number = 0;
 
-        for (let i = 0; i < goTermCounts.length; i++){
-            for(let j = 0; j <repeats; j++){
-                repeatedCounts.push(goTermCounts[i]);
+        sortedCounts = tempCounts.sort((a, b) => {
+            return b - a;
+        }).filter((el, i, a) => {
+            return (i === a.indexOf(el))
+        });
+
+        for (let i = 0; i < sortedCounts.length; i ++) {
+            for (let j = 0 ; j < repeats; j ++){
+                repeatedCounts.push(sortedCounts[i]);
             }
         }
 
+        let testCsv = '';
+        for (let i = 0; i < repeatedCounts.length; i ++){
+            testCsv += repeatedCounts[i] + '\n'
+        }
 
-        let eachAsync = (parameter, callback) => {
-            console.log('starting async');
-            getRandomCounts(parameter, `geohash_${geohash}`, (counts) => {
+        fs.writeFile('./results/serversorttest.csv', testCsv, () => {
+            console.log(`writing done.`)
+        });
 
-                let grid = backgroundGrid[geohash-2][0];
-                let distanceMatrix = backgroundGrid[geohash-2][1];
 
-                grid.forEach((row) => {
-                    row.forEach((col) => {
-                        col[Object.keys(col)][1] = 0;
-                        counts.forEach((targetItem) => {
-                            if (targetItem.hash === Object.keys(col)[0]){
-                                col[Object.keys(col)][1] = targetItem.count;
-                            }
-                        })
-                    })
-                });
-
-                moransICalc(grid, distanceMatrix, false, parameter, geohash, (res) => {
-                    let pass = false;
-
-                    for (let i =0; i < result.length; i ++){
-                        if (result[i][0] === parameter){
-                            result[i].push(res.observedI);
-                            pass = true;
-                            break;
-                        }
-                    }
-                    if (!pass){
-                        result.push([parameter, res.observedI])
-                    }
-                    callback(null, '');
-                });
-            })
-        };
-
-        async.eachLimit(repeatedCounts, 50, eachAsync, (err) => {
-            if (err) {
-                console.log(err)
-            }
-
-            console.log('results are');
-            console.log(result);
-
-            let resultCsv = '';
-
-            for (let i = 0; i < result.length; i ++){
-                for (let j = 0; j < result[i].length;  j++){
-                    resultCsv += result[i][j] + ', '
-                }
-                resultCsv += '\n'
-            }
-
-            fs.writeFile('./results/randomizeResult.txt', resultCsv)
-        })
+        // let eachAsync = (parameter, callback) => {
+        //     console.log('starting async');
+        //     getRandomCounts(parameter, `geohash_${geohash}`, (counts) => {
+        //
+        //         let grid = backgroundGrid[geohash-2][0];
+        //         let distanceMatrix = backgroundGrid[geohash-2][1];
+        //
+        //         grid.forEach((row) => {
+        //             row.forEach((col) => {
+        //                 col[Object.keys(col)][1] = 0;
+        //                 counts.forEach((targetItem) => {
+        //                     if (targetItem.hash === Object.keys(col)[0]){
+        //                         col[Object.keys(col)][1] = targetItem.count;
+        //                     }
+        //                 })
+        //             })
+        //         });
+        //
+        //         moransICalc(grid, distanceMatrix, false, parameter, geohash, (res) => {
+        //             let pass = false;
+        //
+        //             for (let i =0; i < result.length; i ++){
+        //                 if (result[i][0] === parameter){
+        //                     result[i].push(res.observedI);
+        //                     pass = true;
+        //                     break;
+        //                 }
+        //             }
+        //             if (!pass){
+        //                 result.push([parameter, res.observedI])
+        //             }
+        //             console.log(number++);
+        //             callback(null, '');
+        //         });
+        //     })
+        // };
+        //
+        // async.eachLimit(repeatedCounts, 25, eachAsync, (err) => {
+        //     if (err) {
+        //         console.log(err)
+        //     }
+        //
+        //     let resultCsv = '';
+        //
+        //     result.sort((a, b) => {
+        //         return b[0] - a[0]
+        //     });
+        //
+        //     for (let i = 0; i < result.length; i ++){
+        //         for (let j = 0; j < result[i].length;  j++){
+        //             if (j % repeats === 0 && j !== 0 & j !== result[i].length -1){
+        //                 resultCsv += result[i][j] + '\n' + result[i][0] + ', ';
+        //                 continue;
+        //             }
+        //             resultCsv += result[i][j] + ', '
+        //         }
+        //         resultCsv += '\n'
+        //     }
+        //
+        //     console.log(util.inspect(result, false, null))
+        //
+        //     fs.writeFile('./results/randomizeResult.txt', resultCsv)
+        // })
     });
 
     app.get('/morans/', (req, res) => {

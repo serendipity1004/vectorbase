@@ -5,7 +5,7 @@ const getRandomCounts = (numberOfGenes, geohash, callback) => {
 
     let seed = Math.random().toString(36).substring(10);
     console.log(seed);
-    let targetUrl = `http://vb-dev.bio.ic.ac.uk:7997/solr/genea_expression/select?indent=on&q=*:*&rows=${numberOfGenes}&wt=json&sort=random_${seed}%20desc`
+    let targetUrl = `http://vb-dev.bio.ic.ac.uk:7997/solr/genea_expression/select?indent=on&q=*:*&rows=${numberOfGenes}&fl=${geohash}&wt=json&sort=random_${seed}%20desc`
 
     http.get(targetUrl, (res) => {
         let receivedResult = new Date();
@@ -50,9 +50,6 @@ const getRandomCounts = (numberOfGenes, geohash, callback) => {
                 }
             }
             let end = new Date();
-            console.log(`it took ${(end - dataEnded) / 1000} for processing data`);
-            console.log(`it took ${(dataEnded - receivedResult) / 1000} for retrieving data`);
-            console.log(`it took ${(end - start) / 1000} for entire process `);
             callback(countMatrix)
         })
     })
