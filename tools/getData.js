@@ -90,23 +90,23 @@ const getData = (targetUrl, geohash, background, callback) => {
                                         let objectInside = grid[k][l][key2];
 
                                         // Conditionals for orthogonals
-                                        // if (((i + 1 === k && j === l) ||
-                                        //     (i - 1 === k && j === l) ||
-                                        //     (i === k && j + 1 === l) ||
-                                        //     (i === k && j - 1 === l)) &&
-                                        //     objectInside[0] !== 0){
-
-                                        // COnditionals for orthogonals and diagonals
-
                                         if (((i + 1 === k && j === l) ||
                                             (i - 1 === k && j === l) ||
                                             (i === k && j + 1 === l) ||
-                                            (i === k && j - 1 === l) ||
-                                            (i + 1 == k && j + 1 == l) ||
-                                            (i -1 == k && j + 1 == l) ||
-                                            (i + 1 == k && j -1 == l) ||
-                                            (i -1 == k && j -1 == l)) &&
+                                            (i === k && j - 1 === l)) &&
                                             objectInside[0] !== 0){
+
+                                        // COnditionals for orthogonals and diagonals
+
+                                        // if (((i + 1 === k && j === l) ||
+                                        //     (i - 1 === k && j === l) ||
+                                        //     (i === k && j + 1 === l) ||
+                                        //     (i === k && j - 1 === l) ||
+                                        //     (i + 1 == k && j + 1 == l) ||
+                                        //     (i -1 == k && j + 1 == l) ||
+                                        //     (i + 1 == k && j -1 == l) ||
+                                        //     (i -1 == k && j -1 == l)) &&
+                                        //     objectInside[0] !== 0){
                                             distanceMatrix[i * grid.length + j][k * grid.length + l] = 1;
                                         } else {
                                             distanceMatrix[i * grid.length + j][k * grid.length + l] = 0;

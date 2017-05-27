@@ -68,9 +68,16 @@ const pValCalc = (targetFile, randomFile, geohash) => {
                 let randomRow = sortedRandom[j];
                 if (parseFloat(targetRow[1]) === parseFloat(randomRow[0])) {
                     for (let k = 1; k < randomRow.length; k++) {
-                        if (randomRow[k] > parseFloat(targetRow[geohash+2])) {
-                            count++
+                        if (parseFloat(targetRow[geohash + 2]) > 0) {
+                            if (parseFloat(randomRow[k]) >= parseFloat(targetRow[geohash + 2])) {
+                                count++
+                            }
+                        } else {
+                            if (parseFloat(randomRow[k]) <= parseFloat(targetRow[geohash + 2])) {
+                                count++
+                            }
                         }
+
                     }
                     break;
                 }

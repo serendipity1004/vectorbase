@@ -3,6 +3,9 @@
  */
 const util = require('util');
 const fs = require('fs');
+const math = require('mathjs');
+
+const {pValR} = require('./pValR');
 
 const moransICalc = (grid, distanceMatrix, inverse, goTerm, geohash, callback) => {
     let numerator = 0;
@@ -32,7 +35,7 @@ const moransICalc = (grid, distanceMatrix, inverse, goTerm, geohash, callback) =
 
             if (col[key][0] !== 0) {
                 countMatrix.push(norm);
-                countmatrixCsv += key + ", " + col[key][1] + ", ";
+                countmatrixCsv += key + ", " + norm + ", ";
             }
         });
         backgroundCounts += '\n';
@@ -78,7 +81,6 @@ const moransICalc = (grid, distanceMatrix, inverse, goTerm, geohash, callback) =
         finalWeight = distanceMatrix;
     }
 
-
     for (let i = 0; i < finalWeight.length; i++) {
         denominator += Math.pow(averagedCount[i], 2);
         for (let j = 0; j < finalWeight.length; j++) {
@@ -90,17 +92,13 @@ const moransICalc = (grid, distanceMatrix, inverse, goTerm, geohash, callback) =
     let observedI = (averagedCount.length / sumWeights) * (numerator / denominator);
     let expectedI = 1 / (averagedCount.length - 1);
 
-    let result = {
-        observedI, expectedI, totalCount
-    };
+    let pVal = pValR(countMatrix, observedI, distanceMatrix, sumWeights);
 
-    let distanceMatrixCsv = '';
-    distanceMatrix.forEach((row) => {
-        row.forEach((col) => {
-            distanceMatrixCsv += col + ', '
-        });
-        distanceMatrixCsv +=  '\n'
-    });
+    console.log(pVal);
+
+    let result = {
+        observedI, expectedI, totalCount, pVal
+    };
 
     // fs.appendFile('./results/grid.txt', `\n${goTerm}, ${geohash}, ${result.observedI}, \n ${backgroundCounts}, \n ${targetCounts}, \n ${countmatrixCsv}, \n ${distanceMatrixCsv}`);
 
