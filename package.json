@@ -14,6 +14,7 @@
     "async": "^2.4.1",
     "csvtojson": "^1.1.5",
     "express": "^4.15.2",
+    "hsl-to-hex": "^1.0.0",
     "mathjs": "^3.13.2",
     "xlsjs": "^0.7.6"
   }

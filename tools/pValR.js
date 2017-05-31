@@ -48,13 +48,9 @@ const pValR = (x, obs, weightMatrix, sumWeight) => {
     }
 
     let ssq = math.square(sumWeight);
-
     let ei = (-1) / (distanceMatrix.length - 1);
-
     let n = weightMatrix.length;
-
     let m = 0;
-
     let y = [];
 
     for (let i = 0; i < x.length; i++) {
@@ -82,13 +78,10 @@ const pValR = (x, obs, weightMatrix, sumWeight) => {
     }
 
     let k = (sumQuad / n) / Math.pow(v / n, 2);
-
     let num1 = n * ((Math.pow(n, 2) - 3 * n + 3) * s1 - n * s2 + 3 * ssq) - (k * (n * (n - 1) * s1 - 2 * n * s2 + 6 * ssq));
     console.log(`num1 : ${num1}`);
-
     let num2 = (n - 1) * (n - 2) * (n - 3) * ssq;
     console.log(num2);
-
     let num3 = 1 / (Math.pow(n - 1, 2));
     console.log(num3);
 
