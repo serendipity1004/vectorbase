@@ -8,6 +8,7 @@ const http = require('http');
 const fs = require('fs');
 const async = require('async');
 const util = require('util');
+const moment = require('moment');
 // const {eachLimit} = require('async/eachLimit');
 
 const {getData} = require('./tools/getData');
@@ -22,6 +23,10 @@ const host = 'localhost';
 
 if (cluster.isMaster) {
 
+    /*
+    * This block is implemented if the cluster is master i.e. if the clustering had not been implemented yet
+    * */
+
     console.log(`Master ${process.pid} is running`);
 
     for (let i = 0; i < 1; i++) {
@@ -33,18 +38,24 @@ if (cluster.isMaster) {
     });
 
 } else {
+    /*
+    * This block is implemented if the cluster is not a master
+    * */
+
+    // Starting server
     let app = express();
+    let startServer = new Date();
 
-    //Get background
-
+    // Getting Backgrounds
     let backgroundGrid = [];
     let goTermsMatrix = [];
     let moransMatrix = {};
-    let baseUrl = `http://${host}:7997/solr/genea_expression/select?facet.field=cvterms&facet.limit=10320&facet=on&indent=on&q=*:*&rows=0&wt=json`;
+    let baseUrl = `http://${host}:7997/solr/genea_expression/select?facet.field=cvterms&facet.limit=9720&facet=on&indent=on&q=*:*&rows=0&wt=json`;
     let domainUrl = `http://${host}:7997/solr/genea_expression/select?facet.field=domain&facet=on&indent=on&q=*:*&rows=0&wt=json`;
     let promises = [];
     let goTermCounts = [];
 
+    // getting counts for background
     for (let i = 2; i < 6; i++) {
         let targetUrl = `http://${host}:7997/solr/genea_expression/smplGeoclust?q=*:*&stats.facet=geohash_${i}&rows=10320`;
         let geohash = `geohash_${i}`;
@@ -59,12 +70,13 @@ if (cluster.isMaster) {
         promises.push(getDataPromise);
     }
 
+    // Collecting all the go terms from Solr
     let getGoTermsPromise = new Promise((resolve, reject) => {
         getGoTerms(baseUrl, (result) => {
             console.log(result);
             goTermsMatrix = result[0];
             goTermsMatrix.forEach((term, i) => {
-                if (term.length == 0) {
+               if (term.length == 0) {
                     reject();
                 }
                 moransMatrix[term] = [result[1][i]];
@@ -89,21 +101,25 @@ if (cluster.isMaster) {
         })
     };
 
+    // Implemented when all the promises have been implemented.
     Promise.all(promises).then(() => {
         console.log('go term matrix ready');
         async.eachLimit(goTermsMatrix, 100, detailsAsync, (err) => {
             if (err) {
                 console.log(err)
             }
-            console.log(moransMatrix);
+            // console.log(moransMatrix);
 
             console.log('details ready...');
+            let readyTime = new Date();
+            console.log(`ready took ${(readyTime - startServer)/1000}`)
         });
 
         console.log(`worker ${process.pid} is ready...`);
         console.log(goTermsMatrix.length);
     });
 
+    // Created for async function testing purpose. Can be deleted
     app.get('/morans/test', (req, res) => {
         console.log(`start test request`);
         let targetUrl = `http://${host}:7997/solr/genea_expression/smplGeoclust?q=cvterms:"GO:0003674"&stats.facet=geohash_3&rows=10320`;
@@ -142,9 +158,14 @@ if (cluster.isMaster) {
     });
 
 
-    //get Target
-
+    /*
+    * GET /morans/all
+    * Parameters : geohash (takes in a number - geohash_5 would be 5)
+    * Loops from geohash 2 to input geohash in the parameter to calculate Moran's I for all the go terms on Solr.
+    * Saves a csv file to the /results folder
+    * */
     app.get('/morans/all', (req, res) => {
+        let startAll = new Date();
             let queryLevel = parseInt(req.query.geohash) + 1;
             let inverse = req.query.inverse == 'true' ? true : false;
             let promises = [];
@@ -156,7 +177,8 @@ if (cluster.isMaster) {
 
             console.log('start GET /all request');
 
-            for (let i = 2; i < queryLevel; i++) {
+            // creating a list of urls to browse through
+            for (let i = 5; i < queryLevel; i++) {
                 let geohash = `geohash_${i}`;
                 for (let j = 0; j < goTermsMatrix.length; j++) {
                     let targetUrl = `http://${host}:7997/solr/genea_expression/smplGeoclust?q=cvterms:"${goTermsMatrix[j]}"&stats.facet=${geohash}&rows=10320`
@@ -164,6 +186,7 @@ if (cluster.isMaster) {
                 }
             }
 
+            // function for each url
             let eachAsync = (inputParameters, callback) => {
 
                 console.log('starting eachasync');
@@ -194,13 +217,14 @@ if (cluster.isMaster) {
             };
 
 
+            //Run 50 asyncs at a time
             async.eachLimit(asyncParameters, 50, eachAsync, (err) => {
                 if (err) {
                     console.log(err)
                 }
 
                 console.log(goTermCounts);
-                console.log('requests finished')
+                console.log('requests finished');
 
                 let result = '';
 
@@ -214,12 +238,19 @@ if (cluster.isMaster) {
                     result += '\n';
                 }
                 fs.writeFile('./results/result.txt', result);
+                console.log((new Date() - startAll)/1000/60)
+                console.log('seconds')
             });
 
 
         }
     );
 
+    /*
+    * GET /morans/randomize
+    * Randomizes 100 repetition for each unique counts of the genes in all the go terms on Solr.
+    * Saves csv file to the /results folder
+    * */
     app.get('/morans/randomize', (req, res) => {
         let geohash = req.query.geohash;
         let repeats = req.query.repeats;
@@ -306,7 +337,14 @@ if (cluster.isMaster) {
         })
     });
 
+    /*
+    * GET /morans/
+    * Retrieve Moran's I for individual GO term
+    * Parameters : geohash (take in int e.g. 2 = geohash_2), field (takes in string e.g.cvterms), value (takes in string e.g. "GO:0016020"), inverse (takes in boolean - default is false)
+    * Returns a response of ObservedI, ExpectedI, P-value
+    * */
     app.get('/morans/', (req, res) => {
+        let start = new Date();
         let geoLevel = req.query.geohash;
         let geohash = `geohash_${geoLevel}`;
         let field = req.query.field;
@@ -321,6 +359,7 @@ if (cluster.isMaster) {
         processData(targetUrl, geohash, geoLevel, false, backgroundGrid, inverse, (morans) => {
             res.send(morans[0]);
             console.log(morans[0]);
+            console.log((new Date() - start)/1000)
         })
     });
 

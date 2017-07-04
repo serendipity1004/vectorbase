@@ -94,8 +94,6 @@ const moransICalc = (grid, distanceMatrix, inverse, goTerm, geohash, callback) =
 
     let pVal = pValR(countMatrix, observedI, distanceMatrix, sumWeights);
 
-    console.log(pVal);
-
     let result = {
         observedI, expectedI, totalCount, pVal
     };
